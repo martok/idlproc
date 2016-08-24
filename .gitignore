@@ -1,0 +1,14 @@
+*.gitdir
+
+*.dll
+*.so
+*.exe
+*.dbg
+
+*.o
+*.ppu
+
+*.~*
+*.lps
+*.compiled
+*.test

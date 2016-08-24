@@ -1,0 +1,3 @@
+[submodule "lib/tply"]
+	path = lib/tply
+	url = git@github.com:martok/fpc-tply.git
