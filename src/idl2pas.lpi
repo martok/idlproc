@@ -28,7 +28,7 @@
         <FormatVersion Value="1"/>
       </local>
     </RunParams>
-    <Units Count="4">
+    <Units Count="5">
       <Unit0>
         <Filename Value="idl2pas.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -45,6 +45,10 @@
         <Filename Value="parser.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit3>
+      <Unit4>
+        <Filename Value="pnode.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit4>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
@@ -64,7 +68,9 @@
       </SyntaxOptions>
     </Parsing>
     <Other>
-      <CustomOptions Value="-dyydebug"/>
+      <OtherDefines Count="1">
+        <Define0 Value="yydebug"/>
+      </OtherDefines>
     </Other>
   </CompilerOptions>
   <Debugging>

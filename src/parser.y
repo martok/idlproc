@@ -8,10 +8,16 @@ unit parser;
 interface
 
 uses
-  lexlib, yacclib;
+  pnode, lexlib, yacclib;
+
+type
+  YYSType = pnode.TPNode;
 
              
 function yyparse : Integer;
+
+var
+  yyparseresult: YYSType;
 
 implementation
 
@@ -21,12 +27,18 @@ const
 var
   st_in_attrib_list: boolean = false;
   st_try_property: boolean = false;
+  yycapture: AnsiString;
 
 procedure yyerror ( msg : String );
 begin
   writeln('at line ',yylineno,':',yycolno,' "',yytext,'":');
   WriteLn('  ',msg);
 end(*yyerrmsg*);
+
+procedure AcceptTree(PR: YYSType);
+begin
+  yyparseresult:= PR
+end;
 
 
 %}
@@ -40,41 +52,41 @@ end(*yyerrmsg*);
 %token EXTENSION INCLUDE
 
 
-%right _ASSIGN
+%right EQUAL
 %right R_AND
 
-%left EQUAL UNEQUAL GT LT GTE LTE
+%left UNEQUAL GT LT GTE LTE
 %left QUESTIONMARK COLON
 %%
 
 idlfile
-    : declaration_list               {  }
+    : declaration_list               { AcceptTree($1); }
     ;
 
 declaration_list
-    : /* empty */                    {  }
-    | declaration_list declaration   {  }
+    : /* empty */                    { $$:= TPNode.CreateList(ntDocument); }
+    | declaration_list declaration   { $$:= $1; $1.Append($2); }
     ;
 
 declaration
-    : EXTENSION                      {  }
-    | INCLUDE                        {  }
-    | declaration_body
+    : EXTENSION                      { $$:= TPNode.Create(ntExtension); $$.Name:= yycapture; }
+    | INCLUDE                        { $$:= TPNode.Create(ntInclude); $$.Name:= yycapture; }
+    | declaration_body               { $$:= $1; }
     ;
 
 attributes_maybe
-    : /* empty */
-    | LECKKLAMMER attribute_list RECKKLAMMER  { st_in_attrib_list:= false; }
+    : /* empty */                             { $$:= nil; }
+    | LECKKLAMMER attribute_list RECKKLAMMER  { $$:= TPNode.CreateList(ntAttributes); $$.AppendList($2); st_in_attrib_list:= false; }
     ;
 
 attribute_list
-    : attribute_list COMMA attribute          {  }
-    | attribute                               {  }
+    : attribute_list COMMA attribute          { $$:= TPNode.CreateList(ntTemporary); $$.AppendList($1); $$.Append($3); }
+    | attribute                               { $$:= TPNode.CreateList(ntTemporary); $$.Append($1); }
     ;
 
 attribute
-    : attribute_tag ID LKLAMMER immediate RKLAMMER          {  }
-    | attribute_tag ID                                      {  }
+    : attribute_tag ident LKLAMMER immediate RKLAMMER          { $$:= TPNode.Create(ntAttribute); $$.Name:= $2.Name; $$.Value:= $4; }
+    | attribute_tag ident                                      { $$:= TPNode.Create(ntAttribute); $$.Name:= $2.Name; $$.Value:= nil; }
     ;
 
 attribute_tag
@@ -82,22 +94,23 @@ attribute_tag
     ;
 
 declaration_body
-    : library                                 {  }
-    | type_declaration                        {  }
+    : library                                 { $$:= $1; }
+    | type_declaration                        { $$:= $1; }
     ;
 
 library
-    : attributes_maybe _LIBRARY ID LGKLAMMER type_declaration_list RGKLAMMER SEMICOLON  {  }
+    : attributes_maybe _LIBRARY ident LGKLAMMER type_declaration_list RGKLAMMER SEMICOLON   { $$:= TPNode.CreateList(ntLibrary); $$.Name:= $3.Name; $$.Attribs:= $1; $$.AppendList($5); }
     ;
 
 type_declaration_list
-    : /* Empty */                             {  }
-    | type_declaration_list type_declaration  {  }
+    : /* Empty */                             { $$:= TPNode.CreateList(ntTemporary); }
+    | type_declaration_list type_declaration  { $$:= $1; $1.Append($2); }
     ;
 
 type_declaration
     : interface                               {  }
     | module                                  {  }
+    | directive                               {  }
     | typedef                                 {  }  
     | struct                                  {  }
     | union                                   {  }
@@ -105,37 +118,37 @@ type_declaration
     ;
 
 interface
-    : attributes_maybe _INTERFACE ID interface_base LGKLAMMER interface_member_list RGKLAMMER SEMICOLON {  }
+    : attributes_maybe _INTERFACE ident interface_base LGKLAMMER interface_member_list RGKLAMMER SEMICOLON { $$:= TPNode.CreateList(ntInterface); $$.Name:= $3.Name; $$.Attribs:= $1; $$.Parent:= $4; $$.AppendList($6); }
     ;
 
-interface
-    : attributes_maybe _MODULE ID LGKLAMMER module_member_list RGKLAMMER SEMICOLON {  }
+module
+    : attributes_maybe _MODULE ident LGKLAMMER module_member_list RGKLAMMER SEMICOLON { $$:= TPNode.CreateList(ntModule); $$.Name:= $3.Name; $$.Attribs:= $1; $$.AppendList($5); }
     ;
 
 interface_base
-    : /* empty */                             {  }
-    | COLON interfaceparents                  {  }
+    : /* empty */                             { $$:= nil; }
+    | COLON interfaceparents                  { $$:= TPNode.CreateList(ntIntfParents); $$.AppendList($2); }
     ;
 
 interfaceparents       
-    : interfaceparents COMMA ID               {  }
-    | ID                                      {  }
+    : interfaceparents COMMA ident               { $$:= TPNode.CreateList(ntIntfParents); $$.AppendList($1); $$.Append($3); }
+    | ident                                      { $$:= TPNode.CreateList(ntIntfParents); $$.Append($1); }
     ;
 
 interface_member_list
-    : interface_member_list interface_member  {  }
-    | interface_member                        {  }
+    : /* Empty */                                { $$:= TPNode.CreateList(ntTemporary); }
+    | interface_member_list interface_member     { $$:= $1; $$.Append($2); }
     ;
 
 interface_member
-    : const                                   {  }
-    | property                                {  }
-    | method                                  {  }
+    : const                                      { $$:= $1; }
+    | property                                   { $$:= $1; }
+    | method                                     { $$:= $1; }
     ;
 
-module_member_list
-    : module_member_list module_member        {  }
-    | module_member                           {  }
+module_member_list                                    
+    : /* empty */                                { $$:= TPNode.CreateList(ntTemporary); }
+    | module_member_list module_member           { $$:= $1; $1.Append($2); }
     ;
 
 module_member
@@ -143,52 +156,60 @@ module_member
     | method                                  {  }
     ;
 
+directive
+    : attribute_tag ident LKLAMMER immediate RKLAMMER SEMICOLON                 { st_in_attrib_list:= false; $$:= TPNode.Create(ntDirective); $$.Name:= $2.Name; $$.Value:= $4; }
+
 const
-    : attributes_maybe _CONST typespec ID EQUAL immediate SEMICOLON          {  }
+    : attributes_maybe _CONST typespec ident EQUAL immediate SEMICOLON          { $$:= TPNode.Create(ntConst); $$.Name:= $4.Name; $$.Attribs:= $1; $$.Value:= $6; $$.typ:= $3; }
     ;
         
 property
-    : attributes_maybe readonly_maybe _ATTRIBUTE typespec ID SEMICOLON        {  }
+    : attributes_maybe readonly_maybe _ATTRIBUTE typespec ident SEMICOLON       { $$:= TPNode.Create(ntProperty); $$.Name:= $5.Name; $$.Attribs:= $1; $$.Readonly:= Assigned($2); $$.typ:= $4; }
     ;
 
 readonly_maybe
-    : _READONLY                                {  }
-    | /* Empty */                             {  }
+    : _READONLY                               { $$:= TPNode.Create(ntTemporary); }
+    | /* Empty */                             { $$:= nil; }
     ;
 
 method
-    : attributes_maybe typespec ID LKLAMMER paramlist RKLAMMER SEMICOLON     {  }
+    : attributes_maybe typespec ident LKLAMMER paramlist RKLAMMER SEMICOLON     { $$:= TPNode.CreateList(ntMethod); $$.Name:= $3.Name; $$.Attribs:= $1; $$.typ:= $2; if Assigned($5) then $$.AppendList($5); }
     ;
 
 paramlist
-    : paramlist COMMA param                   {  }
-    | param                                   {  }
-    |                                         {  }
+    : paramlist COMMA param                   { $$:= TPNode.CreateList(ntTemporary); $$.AppendList($1); $$.Append($3); }
+    | param                                   { $$:= TPNode.CreateList(ntTemporary); $$.Append($1); }
+    |                                         { $$:= nil; }
     ;
 
 param
-    : attributes_maybe inoutspec typespec ID  {  }
+    : attributes_maybe inoutspec typespec ident  { $$:= TPNode.Create(ntParam); $$.Name:= $4.Name; $$.Attribs:= $1; $$.typ:= $3; $$.inoutspec:= PtrUint($2); }
     ;
 
 /* TODO: configure matches */
 inoutspec
-    : _IN                                     {  }
-    | _OUT                                    {  }
-    | _INOUT                                  {  }
-    | /* MSIDL: as attrib! */                 {  }
+    : _IN                                     { $$:= TPNode(Pointer(PARAM_IN)); }
+    | _OUT                                    { $$:= TPNode(Pointer(PARAM_OUT)); }
+    | _INOUT                                  { $$:= TPNode(Pointer(PARAM_INOUT)); }
+    | /* MSIDL: as attrib! */                 { $$:= TPNode(Pointer(PARAM_DEFAULT)); }
     ;
 
 /* TODO: pointer etc*/
 typespec
-    : typespec ID                             {  }
-    | ID                                      {  }
+    : typespec ident                          { $$:= TPNode.Create(ntIdentifier); $$.Name:= $1.Name + ' ' + $2.Name; }
+    | ident                                   { $$:= $1; }
     ;
 
+ident
+    : ID                                      { $$:= TPNode.Create(ntIdentifier); $$.Name:= yytext; }
+    ;
+
+
 immediate
-    : IID                                     {  }
-    | NUMBER                                  {  }
-    | CSTRING                                 {  }
-    | ID                                      {  }
+    : IID                                     { $$:= TPNode.Create(ntValueIID); $$.Name:= yytext; }
+    | NUMBER                                  { $$:= TPNode.Create(ntValueNumber); $$.Name:= yytext; }
+    | CSTRING                                 { $$:= TPNode.Create(ntValueStr); $$.Name:= yytext; }
+    | ident                                   { $$:= TPNode.Create(ntValueRef); $$.Name:= yytext; }
     ;
 
 %%

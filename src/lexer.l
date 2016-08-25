@@ -5,7 +5,7 @@ Vorspann
 %}
 
 %{
-
+       
 (* Note: Keywords are determined by scanning a keyword table, rather
    than including the keyword patterns in the Lex source which is done
    in the original version of this file. I prefer this method, because
@@ -17,71 +17,77 @@ Vorspann
    and 68 transitions for the keyword table version). *)
 
 function upper(str : String) : String;
-  (* converts str to uppercase *)
-  var i : integer;
-  begin
-    for i := 1 to length(str) do
-      str[i] := upCase(str[i]);
-    upper := str
-  end(*upper*);
+(* converts str to uppercase *)
+var i : integer;
+begin
+  for i := 1 to length(str) do
+    str[i] := upCase(str[i]);
+  upper := str
+end(*upper*);
 
 function is_keyword(id : string; var token : integer) : boolean;
-  const
-    id_len = 20;
-  type
-    Ident = string[id_len];
-  const
-    no_of_keywords = 13;
-    keyword : array [1..no_of_keywords] of Ident = (
-      'ATTRIBUTE', 'CONST', 'ENUM', 'IN', 'INOUT', 'INTERFACE', 'LIBRARY', 'MODULE', 'OUT', 'READONLY', 'STRUCT', 'TYPEDEF',  'UNION'
-    );
-    keyword_token : array [1..no_of_keywords] of integer = (    
-      _ATTRIBUTE,  _CONST,  _ENUM,  _IN,  _INOUT,  _INTERFACE,  _LIBRARY,  _MODULE,  _OUT,  _READONLY,  _STRUCT,  _TYPEDEF,  _UNION
-    );
-  var m, n, k : integer;
-  begin
-    id := upper(id);
-    (* binary search: *)
-    m := 1; n := no_of_keywords;
-    while m<=n do
-      begin
-        k := m+(n-m) div 2;
-        if id=keyword[k] then
-          begin
-            is_keyword := true;
-            token := keyword_token[k];
-            exit
-          end
-        else if id>keyword[k] then
-          m := k+1
-        else
-          n := k-1
-      end;
-    is_keyword := false
-  end(*is_keyword*);
-
-  procedure commenteof;
-  begin
-    writeln('unexpected EOF inside comment at line ', yylineno);
-  end(*commenteof*);
-
-  procedure skip_until_eol;
-  var c: char;
-  begin
-    c:=get_char;
-    while not (c in [#0, newline]) do
-     c:=get_char;
-  end;
-
-  function take_until_eol: char;  
-  var c: char;
-  begin
-    c:=get_char;
-    while not (c in [#0, newline]) do begin
-      c:=get_char;
+const
+  id_len = 20;
+type
+  Ident = string[id_len];
+const
+  no_of_keywords = 13;
+  keyword : array [1..no_of_keywords] of Ident = (
+    'ATTRIBUTE', 'CONST', 'ENUM', 'IN', 'INOUT', 'INTERFACE', 'LIBRARY', 'MODULE', 'OUT', 'READONLY', 'STRUCT', 'TYPEDEF',  'UNION'
+  );
+  keyword_token : array [1..no_of_keywords] of integer = (
+    _ATTRIBUTE,  _CONST,  _ENUM,  _IN,  _INOUT,  _INTERFACE,  _LIBRARY,  _MODULE,  _OUT,  _READONLY,  _STRUCT,  _TYPEDEF,  _UNION
+  );
+var m, n, k : integer;
+begin
+  id := upper(id);
+  (* binary search: *)
+  m := 1; n := no_of_keywords;
+  while m<=n do
+    begin
+      k := m+(n-m) div 2;
+      if id=keyword[k] then
+        begin
+          is_keyword := true;
+          token := keyword_token[k];
+          exit
+        end
+      else if id>keyword[k] then
+        m := k+1
+      else
+        n := k-1
     end;
-    take_until_eol:= c;
+  is_keyword := false
+end(*is_keyword*);
+
+procedure commenteof;
+begin
+  writeln('unexpected EOF inside comment at line ', yylineno);
+end(*commenteof*);
+
+procedure skip_until_eol;
+var c: char;
+begin
+  c:=get_char;
+  while not (c in [#0, newline]) do
+   c:=get_char;
+end;
+
+procedure begin_take;
+begin
+  yycapture:= '';
+end;
+
+function take_until_eol: char;
+var c: char;
+begin
+  c:=get_char;
+  while not (c in [#0, newline]) do begin
+    yycapture += c;
+    c:=get_char;
   end;
+  take_until_eol:= c;
+end;
 
 %}
 
@@ -158,12 +164,14 @@ var c  : char;
                         end;
 "//"                    skip_until_eol;
 "%{"                    begin
+                          begin_take;
                           repeat
                             c:= take_until_eol;
                             if c = #0 then begin
                               commenteof;
                               exit;
                             end;
+                            yycapture += c;
                             c:= get_char;
 			    case c of
 			      '%' : begin
@@ -177,11 +185,14 @@ var c  : char;
                                      commenteof;
                                      exit;
                                    end;
-			    end;
+			    end;           
+                            yycapture += c;
 			  until false;
                         end;
 "#"[ \t]*"include"      begin
+                          begin_take;
                           take_until_eol;
+                          return(INCLUDE);
                         end;
 
 [ \t\n\f]               ;
