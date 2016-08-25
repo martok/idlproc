@@ -15,8 +15,12 @@ function yyparse : Integer;
 
 implementation
 
+const
+   newline = #10;
+
 var
   st_in_attrib_list: boolean = false;
+  st_try_property: boolean = false;
 
 procedure yyerror ( msg : String );
 begin
@@ -31,8 +35,9 @@ end(*yyerrmsg*);
 %token COLON SEMICOLON COMMA EQUAL
 %token LKLAMMER RKLAMMER LECKKLAMMER RECKKLAMMER LGKLAMMER RGKLAMMER
 %token _LIBRARY _INTERFACE _MODULE _TYPEDEF _STRUCT _UNION _ENUM _CONST
-%token _IN _OUT _INOUT
-%token ID NUMBER CSTRING IID   
+%token _IN _OUT _INOUT _ATTRIBUTE _READONLY
+%token ID NUMBER CSTRING IID
+%token EXTENSION INCLUDE
 
 
 %right _ASSIGN
@@ -52,8 +57,8 @@ declaration_list
     ;
 
 declaration
-    : extension                      {  }
-    | include                        {  }
+    : EXTENSION                      {  }
+    | INCLUDE                        {  }
     | declaration_body
     ;
 
@@ -143,7 +148,12 @@ const
     ;
         
 property
-    : attributes_maybe ATTRIBUTE typespec ID SEMICOLON                       {  }
+    : attributes_maybe readonly_maybe _ATTRIBUTE typespec ID SEMICOLON        {  }
+    ;
+
+readonly_maybe
+    : _READONLY                                {  }
+    | /* Empty */                             {  }
     ;
 
 method
@@ -176,8 +186,9 @@ typespec
 
 immediate
     : IID                                     {  }
-    | NUMBER                                  { writeln(yytext); }
+    | NUMBER                                  {  }
     | CSTRING                                 {  }
+    | ID                                      {  }
     ;
 
 %%

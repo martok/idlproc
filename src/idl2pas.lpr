@@ -11,7 +11,7 @@ uses
   { you can add units after this };
 
 begin
-  AssignFile(yyinput, ExtractFilePath(ParamStr(0)) + '..\tests\module.idl');
+  AssignFile(yyinput, ExtractFilePath(ParamStr(0)) + '..\tests\nsIVariant.idl');
   Reset(yyinput);
   parser.yyparse;
   ReadLn;

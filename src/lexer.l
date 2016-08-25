@@ -31,12 +31,12 @@ function is_keyword(id : string; var token : integer) : boolean;
   type
     Ident = string[id_len];
   const
-    no_of_keywords = 11;
+    no_of_keywords = 13;
     keyword : array [1..no_of_keywords] of Ident = (
-      'CONST', 'ENUM', 'IN', 'INOUT', 'INTERFACE', 'LIBRARY', 'MODULE', 'OUT', 'STRUCT', 'TYPEDEF',  'UNION'
+      'ATTRIBUTE', 'CONST', 'ENUM', 'IN', 'INOUT', 'INTERFACE', 'LIBRARY', 'MODULE', 'OUT', 'READONLY', 'STRUCT', 'TYPEDEF',  'UNION'
     );
     keyword_token : array [1..no_of_keywords] of integer = (    
-      _CONST,  _ENUM,  _IN,  _INOUT,  _INTERFACE,  _LIBRARY,  _MODULE,  _OUT,  _STRUCT,  _TYPEDEF,  _UNION
+      _ATTRIBUTE,  _CONST,  _ENUM,  _IN,  _INOUT,  _INTERFACE,  _LIBRARY,  _MODULE,  _OUT,  _READONLY,  _STRUCT,  _TYPEDEF,  _UNION
     );
   var m, n, k : integer;
   begin
@@ -60,6 +60,29 @@ function is_keyword(id : string; var token : integer) : boolean;
     is_keyword := false
   end(*is_keyword*);
 
+  procedure commenteof;
+  begin
+    writeln('unexpected EOF inside comment at line ', yylineno);
+  end(*commenteof*);
+
+  procedure skip_until_eol;
+  var c: char;
+  begin
+    c:=get_char;
+    while not (c in [#0, newline]) do
+     c:=get_char;
+  end;
+
+  function take_until_eol: char;  
+  var c: char;
+  begin
+    c:=get_char;
+    while not (c in [#0, newline]) do begin
+      c:=get_char;
+    end;
+    take_until_eol:= c;
+  end;
+
 %}
 
 D [0-9]    
@@ -73,7 +96,8 @@ var c  : char;
 
 %}
 
-[a-zA-Z_]([a-zA-Z0-9])*	if not st_in_attrib_list and is_keyword(yytext, kw) then
+[a-zA-Z_]([a-zA-Z0-9_])*	if (not st_in_attrib_list) and
+                           is_keyword(yytext, kw) then
                           return(kw)
                         else
                           return(ID);
@@ -115,7 +139,50 @@ var c  : char;
 "["                     return(LECKKLAMMER);
 "]"                     return(RECKKLAMMER); 
 "{"                     return(LGKLAMMER);
-"}"                     return(RGKLAMMER);   
+"}"                     return(RGKLAMMER);
+
+"/*"                    begin
+                          repeat
+			    c := get_char;
+			    case c of
+			      '*' : begin
+				      c := get_char;
+				      if c='/' then exit else unget_char(c)
+				    end;
+                              #0 : begin
+                                     commenteof;
+                                     exit;
+                                   end;
+			    end;
+			  until false;
+                        end;
+"//"                    skip_until_eol;
+"%{"                    begin
+                          repeat
+                            c:= take_until_eol;
+                            if c = #0 then begin
+                              commenteof;
+                              exit;
+                            end;
+                            c:= get_char;
+			    case c of
+			      '%' : begin
+				      c := get_char;
+				      if c='}' then begin
+                                        return(EXTENSION);
+                                        exit;
+                                      end else unget_char(c)
+				    end;
+                              #0 : begin
+                                     commenteof;
+                                     exit;
+                                   end;
+			    end;
+			  until false;
+                        end;
+"#"[ \t]*"include"      begin
+                          take_until_eol;
+                        end;
 
 [ \t\n\f]               ;
 .                       begin
