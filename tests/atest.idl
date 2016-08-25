@@ -1,0 +1,5 @@
+interface atest {
+	const int Bar = 0;
+    void parseFragment();
+    void displayError(IN AUTF8String errorMsg);
+};

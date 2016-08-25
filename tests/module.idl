@@ -1,0 +1,32 @@
+[
+  uuid(9F0AD387-8766-4D99-B2BC-71992436D753), 
+  version(1.0), 
+  helpstring("TypeLib1 Library")
+    
+]
+library TypeLib1
+{
+	[uuid("2AD36ABF-90E3-11D1-AA75-02C04FB73F42"),
+			dllname("circle.dll")]
+	module MyModule
+	{
+	  const long foo = 42;	
+	  const double PI = 3.14159;
+	  [entry(1)] double _stdcall area([in] double radius);
+	  [entry(2)] double _stdcall circumference([in] double radius);
+	};
+
+	[
+		uuid(12345678-1234-1234-1234-123456789ABC), 
+		helpstring("This is not GDI.EXE"), 
+		helpcontext(190), 
+		dllname("MATH.DLL")
+	] 
+	module somemodule
+	{ 
+		[helpstring("Color for the frame")] const unsigned long COLOR_FRAME = 0x80000006; 
+		[helpstring("Not a rectangle but a square"), 
+		 entry(1)] 
+				double square([in] double x); 
+	};
+};

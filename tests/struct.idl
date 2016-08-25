@@ -1,0 +1,29 @@
+[
+  uuid(9F0AD387-8766-4D99-B2BC-71992436D753), 
+  version(1.0), 
+  helpstring("TypeLib1 Library")
+    
+]
+library TypeLib1
+{
+
+  importlib("stdole2.tlb");
+  importlib("stdvcl40.dll");
+
+  [
+    uuid(B63D0003-5DA9-4BAC-8DE5-6B9979463894), 
+    version(1.0)
+  ]
+  typedef struct tagRecord1
+  {
+    long MyField;
+  } Record1;
+
+  [uuid("2EE36ABF-90E3-11D1-AA75-02C04FB73F42"),
+        helpstring("item description")]
+  typedef union
+  {
+	long ID;
+	double Value;
+  } MyUnion;
+};
