@@ -8,7 +8,7 @@ unit parser;
 interface
 
 uses
-  pnode, lexlib, yacclib;
+  SysUtils, pnode, lexlib, yacclib;
 
 type
   YYSType = pnode.TPNode;
@@ -17,7 +17,10 @@ type
 function yyparse : Integer;
 
 var
+  yyfilename: AnsiString;
   yyparseresult: YYSType;
+
+  yinclude_expand: function (fn: AnsiString): AnsiString = nil;
 
 implementation
 
@@ -31,15 +34,14 @@ var
 
 procedure yyerror ( msg : String );
 begin
-  writeln('at line ',yylineno,':',yycolno,' "',yytext,'":');
-  WriteLn('  ',msg);
+  writeln(ErrOutput, yyfilename, '(',yylineno,':',yycolno,'): at "',yytext,'"');
+  WriteLn(ErrOutput, '  ',msg);
 end(*yyerrmsg*);
 
 procedure AcceptTree(PR: YYSType);
 begin
   yyparseresult:= PR
 end;
-
 
 %}
 
@@ -70,7 +72,6 @@ declaration_list
 
 declaration
     : EXTENSION                      { $$:= TPNode.Create(ntExtension); $$.Name:= yycapture; }
-    | INCLUDE                        { $$:= TPNode.Create(ntInclude); $$.Name:= yycapture; }
     | declaration_body               { $$:= $1; }
     ;
 
@@ -214,6 +215,7 @@ immediate
 
 %%
 
+{$I yyinclude.pp}
 {$I lexer.inc}
 
 end.

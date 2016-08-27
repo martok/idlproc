@@ -71,6 +71,12 @@ type
     Typ: TPNode;
     ReadOnly: boolean;
     Inoutspec: integer;
+  public
+    // Extendsion
+    ExtCode: TStringList;
+  public
+    // Attributes
+    Attributes: TStringList;
   end;
 
 const
@@ -94,6 +100,8 @@ begin
   Write('':Level*2);
   if Assigned(N) then begin
     Write(N.nTyp);
+    if Assigned(N.Attributes) then
+      Write(' [',N.Attributes.CommaText,']');
     case N.nTyp of
       ntInclude: begin
         Write(' ', N.Name);
@@ -135,7 +143,6 @@ procedure ReleaseAllNodes;
 begin
   while NodeGC.Count > 0 do begin
     NodeGC.Last.Free;
-    NodeGC.Delete(NodeGC.Count - 1);
   end;
 end;
 
@@ -158,6 +165,8 @@ destructor TPNode.Destroy;
 begin
   NodeGC.Remove(Self);
   FreeAndNil(Children);
+  FreeAndNil(ExtCode);
+  FreeAndNil(Attributes);
   inherited Destroy;
 end;
 

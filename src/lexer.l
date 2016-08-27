@@ -192,7 +192,8 @@ var c  : char;
 "#"[ \t]*"include"      begin
                           begin_take;
                           take_until_eol;
-                          return(INCLUDE);
+                          if not yinclude_push(yycapture) then
+                            return(ILLEGAL);
                         end;
 
 [ \t\n\f]               ;
