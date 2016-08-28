@@ -80,7 +80,6 @@ function TIDLParser.PrepareParsedNode(const aNode: TPNode): boolean;
     n2: TPNode;
   begin
     Result:= true;
-    // Process Includes etc.
     case n.nTyp of
       ntExtension: begin
         n.ExtCode:= TStringList.Create;
@@ -92,6 +91,7 @@ function TIDLParser.PrepareParsedNode(const aNode: TPNode): boolean;
     // Rewrite Attributes for easier access
     if Assigned(n.Attribs) then begin
       n.Attributes:= TStringList.Create;
+      n.Attributes.CaseSensitive:= false;
       for n2 in n.Attribs.Children do begin
         if Assigned(n2.Value) then
           n.Attributes.AddObject(n2.Name + n.Attributes.NameValueSeparator + n2.Value.Name, n2.Value)
