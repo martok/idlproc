@@ -87,18 +87,24 @@ function TIDLParser.PrepareParsedNode(const aNode: TPNode): boolean;
         n.Name:= n.ExtCode[0];
         n.ExtCode.Delete(0);
       end;
+      ntTypeAlias: begin
+        if Assigned(n.Typ) and (n.Typ.nTyp = ntMethod) then
+          ProcessRecursive(n.Typ);
+      end;
     end;
-    // Rewrite Attributes for easier access
-    if Assigned(n.Attribs) then begin
+    // Rewrite Attributes for easier access; force for some where we know access will happen
+    if (n.nTyp in [ntInterface, ntModule]) or Assigned(n.Attribs) then begin
       n.Attributes:= TStringList.Create;
       n.Attributes.CaseSensitive:= false;
-      for n2 in n.Attribs.Children do begin
-        if Assigned(n2.Value) then
-          n.Attributes.AddObject(n2.Name + n.Attributes.NameValueSeparator + n2.Value.Name, n2.Value)
-        else
-          n.Attributes.Add(n2.Name);
+      if Assigned(n.Attribs) then begin
+        for n2 in n.Attribs.Children do begin
+          if Assigned(n2.Value) then
+            n.Attributes.AddObject(n2.Name + n.Attributes.NameValueSeparator + n2.Value.Name, n2.Value)
+          else
+            n.Attributes.Add(n2.Name);
+        end;
+        n.Attribs:= nil;
       end;
-      n.Attribs:= nil;
     end;
 
     if Assigned(n.Children) then begin

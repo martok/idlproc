@@ -1,5 +1,7 @@
+[uuid(764DCC42-B08A-4048-A740-CEE0E3EB0971)]
 interface atest {
-	const int Bar = 0;
     void parseFragment();
-    void displayError(IN AUTF8String errorMsg);
+    void displayError(in utf8string errorMsg);
 };
+
+#include "module.idl"

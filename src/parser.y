@@ -46,9 +46,9 @@ end;
 %}
 
 %token ILLEGAL
-%token COLON SEMICOLON COMMA EQUAL
+%token COLON SEMICOLON COMMA EQUAL ASTERISK
 %token LKLAMMER RKLAMMER LECKKLAMMER RECKKLAMMER LGKLAMMER RGKLAMMER
-%token _LIBRARY _INTERFACE _MODULE _TYPEDEF _STRUCT _UNION _ENUM _CONST
+%token _LIBRARY _INTERFACE _MODULE _TYPEDEF _STRUCT _UNION _ENUM _CONST _CALLBACK
 %token _IN _OUT _INOUT _ATTRIBUTE _READONLY
 %token ID NUMBER CSTRING IID
 %token EXTENSION INCLUDE
@@ -70,11 +70,6 @@ declaration_list
     | declaration_list declaration   { $$:= $1; $1.Append($2); }
     ;
 
-declaration
-    : EXTENSION                      { $$:= TPNode.Create(ntExtension); $$.Name:= yycapture; }
-    | declaration_body               { $$:= $1; }
-    ;
-
 attributes_maybe
     : /* empty */                             { $$:= nil; }
     | LECKKLAMMER attribute_list RECKKLAMMER  { $$:= TPNode.CreateList(ntAttributes); $$.AppendList($2); st_in_attrib_list:= false; }
@@ -94,9 +89,9 @@ attribute_tag
     :                                         { st_in_attrib_list:= true; }
     ;
 
-declaration_body
-    : library                                 { $$:= $1; }
-    | type_declaration                        { $$:= $1; }
+declaration
+    : library                                 {  }
+    | type_declaration                        {  }
     ;
 
 library
@@ -110,12 +105,11 @@ type_declaration_list
 
 type_declaration
     : interface                               {  }
-    | module                                  {  }
+    | module                                  {  }      
+    | const                                   {  }
     | directive                               {  }
-    | typedef                                 {  }  
-    | struct                                  {  }
-    | union                                   {  }
-    | enum                                    {  }
+    | typedef                                 {  }
+    | EXTENSION                               { $$:= TPNode.Create(ntExtension); $$.Name:= yycapture; }
     ;
 
 interface
@@ -142,8 +136,7 @@ interface_member_list
     ;
 
 interface_member
-    : const                                      { $$:= $1; }
-    | property                                   { $$:= $1; }
+    : property                                   { $$:= $1; }
     | method                                     { $$:= $1; }
     ;
 
@@ -159,6 +152,15 @@ module_member
 
 directive
     : attribute_tag ident LKLAMMER immediate RKLAMMER SEMICOLON                 { st_in_attrib_list:= false; $$:= TPNode.Create(ntDirective); $$.Name:= $2.Name; $$.Value:= $4; }
+
+typedef
+    : attributes_maybe _TYPEDEF enum ident SEMICOLON                            { $$:= TPNode.CreateList(ntEnum); $$.Name:= $4.Name; $$.Attribs:= $1; $$.AppendList($3); }
+    | attributes_maybe _TYPEDEF struct ident SEMICOLON                          { $$:= TPNode.CreateList(ntStruct); $$.Name:= $4.Name; $$.Attribs:= $1; $$.AppendList($3); }
+    | attributes_maybe _TYPEDEF typespec ident_array SEMICOLON                  { $$:= TPNode.Create(ntTypeAlias); $$.Name:= $4.Name; $$.Attribs:= $1; $$.typ:= $3; $$.typ.SetArraySpec($4); }
+    | attributes_maybe _TYPEDEF _CALLBACK method                                { $$:= TPNode.Create(ntTypeAlias); $$.Name:= $4.Name; $$.typ:= $4; $4.Name:= ''; }
+  /*  | _TYPEDEF union ident SEMICOLON          {  }       */
+    ;
+
 
 const
     : attributes_maybe _CONST typespec ident EQUAL immediate SEMICOLON          { $$:= TPNode.Create(ntConst); $$.Name:= $4.Name; $$.Attribs:= $1; $$.Value:= $6; $$.typ:= $3; }
@@ -195,19 +197,60 @@ inoutspec
     | /* MSIDL: as attrib! */                 { $$:= TPNode(Pointer(PARAM_DEFAULT)); }
     ;
 
-/* TODO: pointer etc*/
 typespec
     : typespec ident                          { $$:= TPNode.Create(ntIdentifier); $$.Name:= $1.Name + ' ' + $2.Name; }
+    | typespec ASTERISK                       { $$:= TPNode.Create(ntIdentifier); $$.Name:= $1.Name + ' *'; }
     | ident                                   { $$:= $1; }
     ;
 
-ident
-    : ID                                      { $$:= TPNode.Create(ntIdentifier); $$.Name:= yytext; }
+enum
+    : _ENUM LGKLAMMER enum_body RGKLAMMER     { $$:= $3; }
     ;
 
+enum_body
+    : enum_body COMMA enumitem                   { $$:= TPNode.CreateList(ntTemporary); $$.AppendList($1); $$.Append($3); }
+    | enumitem                                   { $$:= TPNode.CreateList(ntTemporary); $$.Append($1); }
+    ;
+
+enumitem
+    : ident EQUAL immediate                      { $$:= TPNode.Create(ntConst); $$.Name:= $1.Name; $$.Value:= $3; }
+    | ident                                      { $$:= TPNode.Create(ntConst); $$.Name:= $1.Name; $$.Value:= nil; }
+    ;
+
+struct
+    : _STRUCT LGKLAMMER struct_member_list RGKLAMMER      { $$:= $3; }
+    ;
+
+struct_member_list
+    : /* Empty */                                { $$:= TPNode.CreateList(ntTemporary); }
+    | struct_member_list struct_member           { $$:= $1; $$.Append($2); }
+    ;
+
+struct_member
+    : typespec ident_array SEMICOLON             { $$:= TPNode.Create(ntField); $$.Name:= $2.Name; $$.typ:= $1; $$.typ.SetArraySpec($2);}
+    ;
+
+ident
+    : ID                                         { $$:= TPNode.Create(ntIdentifier); $$.Name:= yytext; }
+    ;
+
+ident_array
+    : ident array_dimensions                     { $$:= TPNode.CreateList(ntIdentifier); $$.Name:= $1.Name; $$.AppendList($2); }     
+    | ident                                      {  }
+    ;
+
+array_dimensions
+    : array_dimensions LECKKLAMMER array_dim RECKKLAMMER       { $$:= TPNode.CreateList(ntTemporary); $$.AppendList($1); $$.Append($3); }
+    | LECKKLAMMER array_dim RECKKLAMMER                        { $$:= TPNode.CreateList(ntTemporary); $$.Append($2); }
+    ;
+
+array_dim
+    : NUMBER                                                   { $$:= TPNode.Create(ntValueNumber); $$.Name:= yytext; }
+    |                                                          { $$:= TPNode.Create(ntValueNumber); $$.Name:= ''; }
+    ;
 
 immediate
-    : IID                                     { $$:= TPNode.Create(ntValueIID); $$.Name:= yytext; }
+    : IID                                     { $$:= TPNode.Create(ntValueIID); $$.GUID:= StringToGUID('{'+yytext+'}'); }
     | NUMBER                                  { $$:= TPNode.Create(ntValueNumber); $$.Name:= yytext; }
     | CSTRING                                 { $$:= TPNode.Create(ntValueStr); $$.Name:= yytext; }
     | ident                                   { $$:= TPNode.Create(ntValueRef); $$.Name:= yytext; }

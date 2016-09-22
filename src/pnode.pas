@@ -13,14 +13,14 @@ type
   TNodeType = (
     ntDocument,                             // List of Extension, Include or definitions
     ntExtension,                            // %{ }% Extension as text
-    ntInclude,                              // #include directive
     ntLibrary,                              // library x {}
     ntInterface,                            // interface x {}
     ntIntfParents,                          // : a,b
-
-
-
     ntModule,
+
+    ntTypeAlias,                            // typedef old new;
+    ntEnum,                                 // typedef enum {} name;
+    ntStruct,                               // typedef struct {} name;
 
 
     ntIdentifier,                           // Ident
@@ -32,6 +32,7 @@ type
     ntConst,
     ntProperty,
     ntMethod,
+    ntField,
 
     ntParam,
 
@@ -72,11 +73,18 @@ type
     ReadOnly: boolean;
     Inoutspec: integer;
   public
-    // Extendsion
+    // Extension
     ExtCode: TStringList;
+  public
+    // Value
+    GUID: TGuid;
   public
     // Attributes
     Attributes: TStringList;
+    function AttrValue(const a: String): TPNode;
+  public
+    // typedef, struct member
+    procedure SetArraySpec(Dimensions: TPNode);
   end;
 
 const
@@ -103,14 +111,14 @@ begin
     if Assigned(N.Attributes) then
       Write(' [',N.Attributes.CommaText,']');
     case N.nTyp of
-      ntInclude: begin
-        Write(' ', N.Name);
-      end;      
       ntExtension: begin
         Write(' ', N.Name);
       end;
       ntConst: begin
-        Write(' ', N.Name, ': ', N.Typ.Name, ' = ', N.Value.Name);
+        if Assigned(N.Typ) then
+          Write(' ', N.Name, ': ', N.Typ.Name, ' = ', N.Value.Name)
+        else
+          Write(' ', N.Name);
       end;     
       ntProperty: begin
         Write(' ', N.Name, ': ', N.Typ.Name);
@@ -123,7 +131,13 @@ begin
           Write(': ',N.Typ.Name);
       end; 
       ntParam: begin
-        Write(' ', N.Name, ': ', N.Typ.Name);
+        WriteLn;
+        Write('':Level*2, ' ', N.Name, ': ', N.Typ.Name);
+      end;
+      ntTypeAlias: begin      
+        WriteLn;
+        if N.Typ.nTyp = ntMethod then
+          WriteTPNode(N.Typ, Level + 1);
       end;
     end;
     WriteLn();
@@ -184,6 +198,32 @@ begin
   Assert(Assigned(n.Children), 'AppendList called on non-list other node');
   for nc in n.Children do
     Children.Add(nc);
+end;
+
+procedure TPNode.SetArraySpec(Dimensions: TPNode);
+var
+  adim: string;
+  d: TPNode;
+begin       
+  Assert(Dimensions.nTyp = ntIdentifier, 'SetArraySpec called on non-ident node');
+  if Assigned(Dimensions.Children) then begin
+    adim:= '';
+    for d in Dimensions.Children do begin;
+      adim:= format('%s[%s]',[adim, d.Name])
+    end;
+
+    Name:= Name + ' ' + adim;
+  end;
+end;
+
+function TPNode.AttrValue(const a: String): TPNode;
+var
+  i: Integer;
+begin
+  Result:= nil;
+  i:= Attributes.IndexOfName(a);
+  if i >= 0 then
+    Result:= TPNode(Attributes.Objects[i]);
 end;
 
 initialization

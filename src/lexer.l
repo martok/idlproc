@@ -31,12 +31,12 @@ const
 type
   Ident = string[id_len];
 const
-  no_of_keywords = 13;
+  no_of_keywords = 14;
   keyword : array [1..no_of_keywords] of Ident = (
-    'ATTRIBUTE', 'CONST', 'ENUM', 'IN', 'INOUT', 'INTERFACE', 'LIBRARY', 'MODULE', 'OUT', 'READONLY', 'STRUCT', 'TYPEDEF',  'UNION'
+    'ATTRIBUTE', 'CALLBACK', 'CONST', 'ENUM', 'IN', 'INOUT', 'INTERFACE', 'LIBRARY', 'MODULE', 'OUT', 'READONLY', 'STRUCT', 'TYPEDEF',  'UNION'
   );
   keyword_token : array [1..no_of_keywords] of integer = (
-    _ATTRIBUTE,  _CONST,  _ENUM,  _IN,  _INOUT,  _INTERFACE,  _LIBRARY,  _MODULE,  _OUT,  _READONLY,  _STRUCT,  _TYPEDEF,  _UNION
+    _ATTRIBUTE,  _CALLBACK,  _CONST,  _ENUM,  _IN,  _INOUT,  _INTERFACE,  _LIBRARY,  _MODULE,  _OUT,  _READONLY,  _STRUCT,  _TYPEDEF,  _UNION
   );
 var m, n, k : integer;
 begin
@@ -111,7 +111,14 @@ var c  : char;
 \"[^\"]*\"              |
 \'[^\']*\'              |
 "L"\"[^\"]*\"           |
-"L"\'[^\']*\'           return(CSTRING);
+"L"\'[^\']*\'           begin
+                          if yytext > '' then begin
+                            if yytext[1] = 'L' then
+                              Delete(yytext,1,1);
+                            yytext:= AnsiDequotedStr(yytext,'"');
+                          end;
+                          return(CSTRING);
+                        end;
 {D}+[Uu]?[Ll]?[Ll]?     begin
                           while yytext[length(yytext)] in ['L','U','l','u'] do
                             Delete(yytext,length(yytext),1);
@@ -139,6 +146,7 @@ var c  : char;
 ";"                     return(SEMICOLON);
 ","                     return(COMMA);
 "="                     return(EQUAL);
+"*"                     return(ASTERISK);
 
 "("                     return(LKLAMMER); 
 ")"                     return(RKLAMMER);
