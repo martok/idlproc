@@ -1,4 +1,4 @@
-program idl2pas;
+program idlproc;
 
 {$mode objfpc}{$H+}
 {$ModeSwitch advancedrecords}

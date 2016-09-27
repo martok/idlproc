@@ -10,7 +10,7 @@
       </Flags>
       <SessionStorage Value="InProjectDir"/>
       <MainUnit Value="0"/>
-      <Title Value="idl2pas"/>
+      <Title Value="idlproc"/>
       <UseAppBundle Value="False"/>
       <ResourceType Value="res"/>
     </General>
@@ -33,7 +33,7 @@
     </RequiredPackages>
     <Units Count="10">
       <Unit0>
-        <Filename Value="idl2pas.lpr"/>
+        <Filename Value="idlproc.lpr"/>
         <IsPartOfProject Value="True"/>
       </Unit0>
       <Unit1>
@@ -78,7 +78,7 @@
     <Version Value="11"/>
     <PathDelim Value="\"/>
     <Target>
-      <Filename Value="..\bin\idl2pas"/>
+      <Filename Value="..\bin\idlproc"/>
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
