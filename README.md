@@ -126,6 +126,7 @@ Many Declarations accept Attributes specified before them, they are not spelled 
   * `const`: compiler hint that the parameter will not be modified. Note that this is different from the `const` that may be part of the TypeSpec proper.
 
   Parameters are by default passed by value. The `[const]` attribute does not change that, it only allows optimized checking for the consuming compiler. The direction modifiers allow changing this:
+  
   |         | without `[const]` | with `[const]` |
   |---------|-------------------|----------------|
   | nothing | COM standard      | const          |
