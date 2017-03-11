@@ -283,6 +283,7 @@ begin
     'CString': Result:= 'PAnsiChar';
     'CUTF8String': Result:= 'PUTF8Char';
     'CWString': Result:= 'PUnicodeChar';
+    'IID': Result:= 'TGuid';
   else
     Result:= t;
   end;
