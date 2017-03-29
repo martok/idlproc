@@ -1,6 +1,6 @@
-#IDLproc
+# IDLproc
 
-##Usage
+## Usage
 
 ``
 idlproc language [options] [--] infile [outfile]
@@ -18,7 +18,7 @@ idlproc language [options] [--] infile [outfile]
   Follow dependencies via `#include` directives
   
 
-##IDL Dialect
+## IDL Dialect
 IDL2pas uses a restricted version of MIDL with some features added from XPIDL.
 
 ### Base Types
@@ -44,7 +44,7 @@ Const-, Reference- or Pointer-ness that is caused by direction modifiers (see Me
 | `CWString`             | `wchar_t *` (arbitrary encoding)      | `PUnicodeChar`       |
 | `IID`                  | `REFIID`      | `TGUID`       |
 
-###Non-Declarative
+### Non-Declarative
 
 * `#include "file.idl"`
   Read data from `file.idl` next, return to next line in current file afterwards. Relative paths to the current file are allowed. May occur anywhere a token would be allowed, but must end on a line end.
@@ -57,7 +57,7 @@ Const-, Reference- or Pointer-ness that is caused by direction modifiers (see Me
   ```
   Emit code verbatim. Optionally give lang on first line to only emit for a specific language consumer. May only occur as top-level declaration.
 
-##Declarations
+## Declarations
 Declarations may optioanlly be wrapped in a MSIDL-Typelib-`library` definition, but this is not required.
 
 Many Declarations accept Attributes specified before them, they are not spelled in syntax examples here for brevity. Relevant Attributes are given in the Declaration descriptions below.
@@ -165,7 +165,7 @@ Many Declarations accept Attributes specified before them, they are not spelled 
   * `static_cast`: Hint that the literal `Value` is not directly compatible to `TypeSpec` and may need an explicite type cast.
 
 
-##Refereces
+## Refereces
 
 - [TP Lex & Yacc](http://www.musikwissenschaft.uni-mainz.de/~ag/tply/)
 - [Plax & Pyacc Howto](http://wiki.freepascal.org/Plex_and_Pyacc)
