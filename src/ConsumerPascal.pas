@@ -19,7 +19,7 @@ type
     procedure Produce; override;
 
     procedure ProcessNode(p: TPNode);
-    function ConvertType(t: AnsiString): string;
+    function ConvertType(t: AnsiString; PointerChar: Char = 'P'): string;
     function ConvertParameter(p: TPNode): string;
     function ConvertImmediate(p: TPNode): string;
     procedure EmitBuiltinTypes;
@@ -160,7 +160,7 @@ begin
       if p.Typ.nTyp = ntMethod then
         Print('%s = %s;', [p.Name, ConvertMethod(p.Typ)])
       else
-        Print('%s = type %s;', [p.Name, ConvertType(p.Typ.Name)]);
+        Print('%s = type %s;', [p.Name, ConvertType(p.Typ.Name, '^')]);
     end;
     ntEnum: begin
       StartType;
@@ -246,7 +246,7 @@ begin
   fCurrentBlock:= blRoot;
 end;
 
-function TConsumerPascal.ConvertType(t: AnsiString): string;
+function TConsumerPascal.ConvertType(t: AnsiString; PointerChar: Char): string;
 var
   arr,a: string;
   ptrs: integer;
@@ -287,7 +287,7 @@ begin
   else
     Result:= t;
   end;
-  Result:= StringOfChar('P', ptrs) + Result;
+  Result:= StringOfChar(PointerChar, ptrs) + Result;
   Result:= arr + Result;
 end;
 
